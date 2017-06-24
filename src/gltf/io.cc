@@ -76,6 +76,7 @@ namespace io {
         auto root = std::make_unique<Root>();
 
         auto file = std::ifstream(filename);
+        if (!file) throw gltf_exception("could not open file");
 
         picojson::value jval;
         picojson::parse(jval, file);
