@@ -4,11 +4,11 @@
 
 namespace gltf {
 
-class Root {
-
-protected:
-    std::vector<Scene> mScenes;
-    size_t mDefaultScene;
+struct Root {
+    std::vector<UniqueScene>  scenes;
+    std::vector<UniqueNode>   nodes;
+    std::vector<UniqueCamera> cameras;
+    size_t scene;
 };
 
 }

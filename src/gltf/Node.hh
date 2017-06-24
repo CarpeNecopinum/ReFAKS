@@ -1,11 +1,12 @@
 #pragma once
-
-#include "Forward.hh"
+#include <vector>
+#include <glm/mat4x4.hpp>
 
 namespace gltf {
 
-class Node {
-
+struct Node {
+    std::vector<size_t> children;
+    glm::mat4x4 matrix;
 };
 
 }

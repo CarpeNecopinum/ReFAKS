@@ -3,15 +3,15 @@
 #include <memory>
 
 namespace gltf {
-    class Node;
-    using SharedNode = std::shared_ptr<Node>;
+    struct Node;
+    using UniqueNode = std::unique_ptr<Node>;
 
-    class Scene;
-    using SharedScene = std::shared_ptr<Scene>;
+    struct Scene;
+    using UniqueScene = std::unique_ptr<Scene>;
 
-    class Camera;
-    using SharedCamera = std::shared_ptr<Camera>;
+    struct Camera;
+    using UniqueCamera = std::unique_ptr<Camera>;
 
-    
-
+    struct Root;
+    using UniqueRoot = std::unique_ptr<Root>;
 }

@@ -1,13 +1,13 @@
 #pragma once
-
-#include "Forward.hh"
 #include <vector>
+#include <string>
 
 namespace gltf {
 
-class Scene {
+struct Scene {
 protected:
-    std::vector<SharedNode> mNodes;
+    std::string name;
+    std::vector<size_t> nodes;
 };
 
 }
