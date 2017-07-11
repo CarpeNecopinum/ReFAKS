@@ -1,9 +1,12 @@
 #pragma once
+#include <string>
+#include <experimental/optional>
 
 namespace gltf {
 
-class Buffer {
-
+struct Buffer {
+    size_t byteLength;
+    std::experimental::optional<std::string> uri;
 };
 
 }

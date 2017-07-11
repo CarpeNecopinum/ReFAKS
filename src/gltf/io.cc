@@ -1,9 +1,9 @@
 #include "io.hh"
 
-#include "Node.hh"
 #include "Root.hh"
-#include "Scene.hh"
-#include "Camera.hh"
+
+#include <experimental/optional>
+#include <string>
 
 #include <fstream>
 #include <glm/gtc/type_ptr.hpp>
@@ -24,56 +24,147 @@ namespace io {
     };
 
     namespace {
+        using std::experimental::optional;
+
+        template<class T> struct ReadAs  { using Type = T; };
+        template<> struct ReadAs<size_t> { using Type = int64_t; };
+        template<> struct ReadAs<uint>   { using Type = int64_t; };
 
         template<class T>
         T get_or_throw(picojson::value const& from, char const* error) {
-            if (!from.is<T>()) throw gltf_exception(error);
-            return from.get<T>();
+            using TR = typename ReadAs<T>::Type;
+
+            if (!from.is<TR>()) throw gltf_exception(error);
+            return T(from.get<TR>());
         }
 
-        std::vector<size_t> read_indices(picojson::value const& val) {
-            std::vector<size_t> result;
-            auto arr = get_or_throw<array>(val, "Expected indices to be an array.");
-
-            for (auto idxval : arr) {
-                result.push_back(get_or_throw<int64_t>(idxval, "Expected index to be a number."));
+        template<class T>
+        struct Reader {
+            T operator()(picojson::value const& from)
+            {
+                return get_or_throw<T>(from, ("Expected a " + std::string(typeid(T).name())).c_str());
             }
+        };
 
-            return result;
+        template<class T>
+        struct Reader<std::vector<T>> {
+            std::vector<T> operator()(picojson::value const& from)
+            {
+                auto arr = get_or_throw<picojson::array>(from, "Expected an array.");
+
+                std::vector<T> result;
+                for (auto&& e : arr) {
+                    result.push_back(Reader<T>()(e));
+                }
+                return result;
+            }
+        };
+
+        template<class T>
+        optional<T> read_optional(picojson::object const& obj, std::string const& index)
+        {
+            auto it = obj.find(index);
+            if (it == end(obj)) return {};
+
+            return Reader<T>()(it->second);
         }
 
-        UniqueNode readNode(picojson::value const& val) {
-            auto node = std::make_unique<Node>();
-            auto&& obj = get_or_throw<object>(val, "Expected node to be an object.");
+        template<class T>
+        std::vector<T> read_vec(picojson::object const& obj, std::string const& index)
+        {
+            return read_optional<std::vector<T>>(obj, index).value_or(std::vector<T>());
+        }
 
-            {
-                auto childrenit = obj.find("children");
-                if (childrenit != obj.end())
-                    node->children = read_indices(childrenit->second);
+        template<class T>
+        T read_mandatory(picojson::object const& obj, std::string const& index)
+        {
+            auto opt = read_optional<T>(obj, index);
+            if (!opt) throw gltf_exception((("missing required attribute " + index).c_str()));
+            return opt.value();
+        }
+
+        template<>
+        struct Reader<Buffer> {
+            Buffer operator()(picojson::value const& val) {
+                Buffer buffer;
+                auto&& obj = get_or_throw<object>(val, "Expected buffer to be an object.");
+
+                buffer.byteLength = read_optional<size_t>(obj, "byteLength").value_or(0);
+                buffer.uri        = read_optional<std::string>(obj, "uri");
+
+                return buffer;
             }
-            {
-                auto matrixit = obj.find("matrix");
-                if (matrixit != obj.end())
+        };
+
+        template<>
+        struct Reader<BufferView> {
+            BufferView operator()(picojson::value const& val) {
+                BufferView view;
+                auto&& obj = get_or_throw<object>(val, "Expected bufferView to be an object.");
+
+                view.buffer = read_mandatory<size_t>(obj, "buffer");
+                view.byteLength = read_optional<size_t>(obj, "byteLength").value_or(0);
+                view.byteLength = read_optional<size_t>(obj, "byteOffset").value_or(0);
+                view.byteStride = read_optional<size_t>(obj, "byteStride").value_or(0);
+                view.target = read_mandatory<uint>(obj, "target");
+
+                return view;
+            }
+        };
+
+        template<>
+        struct Reader<Accessor> {
+            Accessor operator()(picojson::value const& val) {
+                Accessor acc;
+                auto&& obj = get_or_throw<object>(val, "Expected accessor to be an object.");
+
+                acc.bufferView = read_mandatory<size_t>(obj, "bufferView");
+                acc.byteOffset = read_optional<size_t>(obj, "byteOffset").value_or(0);
+                acc.componentType = Accessor::ComponentType(read_mandatory<size_t>(obj, "byteOffset"));
+                acc.count = read_mandatory<size_t>(obj, "count");
+                acc.min = read_vec<double>(obj, "min");
+                acc.max = read_vec<double>(obj, "max");
+                acc.type = read_optional<std::string>(obj, "type").value_or("");
+
+                return acc;
+            }
+        };
+
+        template<>
+        struct Reader<Node> {
+            Node operator()(picojson::value const& val){
+                Node node;
+                auto&& obj = get_or_throw<object>(val, "Expected node to be an object.");
+
+                node.children = read_optional<std::vector<size_t>>(obj, "children").value_or(std::vector<size_t>{});
                 {
-                    auto&& matrix = get_or_throw<array>(matrixit->second, "Expected matrix to be an array.");
-                    if (matrix.size() != 16) throw gltf_exception("The matrix should have 16 elements.");
+                    auto matrixit = obj.find("matrix");
+                    if (matrixit != obj.end())
+                    {
+                        auto&& matrix = get_or_throw<array>(matrixit->second, "Expected matrix to be an array.");
+                        if (matrix.size() != 16) throw gltf_exception("The matrix should have 16 elements.");
 
-                    for (size_t i = 0; i < 16; i++) {
-                        glm::value_ptr(node->matrix)[i] = get_or_throw<double>(matrix[i], "Expected matrix entry to be a number.");
+                        for (size_t i = 0; i < 16; i++) {
+                            glm::value_ptr(node.matrix)[i] = get_or_throw<double>(matrix[i], "Expected matrix entry to be a number.");
+                        }
                     }
                 }
+                return node;
             }
-            return node;
-        }
+        };
 
-        UniqueScene readScene(picojson::value const& val) {
-            auto scene = std::make_unique<Scene>();
-            return scene;
-        }
+
+        template<>
+        struct Reader<Scene> {
+            Scene operator()(picojson::value const& val) {
+                Scene scene;
+                return scene;
+            }
+        };
     }
 
-    UniqueRoot readFromFile(std::string const& filename) {
-        auto root = std::make_unique<Root>();
+    Root readFromFile(std::string const& filename) {
+        Root root;
 
         auto file = std::ifstream(filename);
         if (!file) throw gltf_exception("could not open file");
@@ -83,11 +174,11 @@ namespace io {
 
         auto&& rootobj = get_or_throw<picojson::object>(jval, "Expected the gltf root to be an object.");
 
-        auto nodesit = rootobj.find("nodes");
-        if (nodesit != rootobj.end()) {
-            auto&& nodesarr = get_or_throw<picojson::array>(nodesit->second, "Expected nodes to be an array.");
-            std::transform(begin(nodesarr), end(nodesarr), back_inserter(root->nodes), readNode);
-        }
+        root.nodes = read_vec<Node>(rootobj, "nodes");
+        root.scenes = read_vec<Scene>(rootobj, "scenes");
+        root.buffers = read_vec<Buffer>(rootobj, "buffers");
+        root.bufferViews = read_vec<BufferView>(rootobj, "bufferViews");
+        root.accessors = read_vec<Accessor>(rootobj, "accessors");
 
         return root;
     }

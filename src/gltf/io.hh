@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Forward.hh"
+#include "Root.hh"
 
 namespace gltf {
 namespace io {
-    UniqueRoot readFromFile(std::string const& filename);
+    Root readFromFile(std::string const& filename);
 }
 }

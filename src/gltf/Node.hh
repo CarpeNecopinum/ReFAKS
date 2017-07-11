@@ -7,6 +7,7 @@ namespace gltf {
 struct Node {
     std::vector<size_t> children;
     glm::mat4x4 matrix;
+    std::vector<double> weights;
 };
 
 }
