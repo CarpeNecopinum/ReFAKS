@@ -161,6 +161,51 @@ namespace io {
                 return scene;
             }
         };
+
+        template<>
+        struct Reader<Camera::Orthographic> {
+            Camera::Orthographic operator()(picojson::value const& val) {
+                Camera::Orthographic ortho;
+                auto&& obj = get_or_throw<picojson::object>(val, "Expected orthographic to be an object.");
+
+                ortho.xmag = read_mandatory<double>(obj, "xmag");
+                ortho.ymag = read_mandatory<double>(obj, "ymag");
+                ortho.zfar = read_mandatory<double>(obj, "zfar");
+                ortho.znear = read_mandatory<double>(obj, "znear");
+
+                return ortho;
+            }
+        };
+
+        template<>
+        struct Reader<Camera::Perspective> {
+            Camera::Perspective operator()(picojson::value const& val) {
+                Camera::Perspective pers;
+                auto&& obj = get_or_throw<picojson::object>(val, "Expected perspective to be an object.");
+
+                pers.aspectRatio = read_optional<double>(obj, "aspectRatio").value_or(1.0);
+                pers.yfov = read_mandatory<double>(obj, "yfov");
+                pers.zfar = read_optional<double>(obj, "zfar");
+                pers.znear = read_mandatory<double>(obj, "znear");
+
+                return pers;
+            }
+        };
+
+        template<>
+        struct Reader<Camera> {
+            Camera operator()(picojson::value const& val) {
+                Camera cam;
+                auto&& obj = get_or_throw<picojson::object>(val, "Expected camera to be an object.");
+
+                cam.name = read_optional<std::string>(obj, "name").value_or("");
+                cam.orthographic = read_optional<Camera::Orthographic>(obj, "orthographic");
+                cam.perspective = read_optional<Camera::Perspective>(obj, "perspective");
+                cam.type = read_optional<std::string>(obj, "type").value_or("");
+
+                return cam;
+            }
+        };
     }
 
     Root readFromFile(std::string const& filename) {
@@ -174,6 +219,7 @@ namespace io {
 
         auto&& rootobj = get_or_throw<picojson::object>(jval, "Expected the gltf root to be an object.");
 
+        root.cameras = read_vec<Camera>(rootobj, "cameras");
         root.nodes = read_vec<Node>(rootobj, "nodes");
         root.scenes = read_vec<Scene>(rootobj, "scenes");
         root.buffers = read_vec<Buffer>(rootobj, "buffers");
