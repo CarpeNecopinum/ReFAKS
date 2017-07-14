@@ -1,5 +1,4 @@
 dist: trusty
-sudo: required
 language:
   - cpp
 compiler:
@@ -18,5 +17,4 @@ install:
     - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
     - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.7" CC="clang-3.7"; fi
 script:
-  - mkdir build && cd build && cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug .. && cmake --build . && cmake --build . --target coveralls
-  - cd ../bin && ./ReFAKS_test
+  - mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug .. && make && cd ../bin && ./ReFAKS_test
