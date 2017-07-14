@@ -8,6 +8,7 @@ compiler:
 addons:
     apt:
         sources:
+            - libgtest-dev
             - llvm-toolchain-precise
             - ubuntu-toolchain-r-test
         packages:
@@ -19,4 +20,4 @@ install:
     - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.7" CC="clang-3.7"; fi
 script:
   - mkdir build && cd build && cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug .. && cmake --build . && cmake --build . --target coveralls
-  - cd bin && ./ReFAKS_test
+  - cd ../bin && ./ReFAKS_test
