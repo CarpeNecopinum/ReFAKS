@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <glm/gtc/type_ptr.hpp>
+#include <typeinfo>
 
 #define PICOJSON_USE_INT64
 #include <common/picojson.hh>
