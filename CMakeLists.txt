@@ -19,8 +19,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sr
 
 file(GLOB_RECURSE TEST_FILES test/*.cc)
 
+
 enable_testing()
-find_package(GTest REQUIRED)
+add_subdirectory(extern/googletest/googletest)
 add_executable(${PROJECT_NAME}_test ${SOURCE_FILES} ${TEST_FILES} ${HEADER_FILES})
 target_include_directories(${PROJECT_NAME}_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src ${GTEST_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME}_test ${GTEST_BOTH_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_test gtest)
