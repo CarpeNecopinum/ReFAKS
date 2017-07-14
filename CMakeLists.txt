@@ -4,13 +4,19 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
 project(ReFAKS)
 
-file(GLOB_RECURSE SOURCE_FILES src/*.cc)
-file(GLOB_RECURSE HEADER_FILES src/*.hh)
+file(GLOB_RECURSE SOURCE_FILES src/common/*.cc src/gltf/*.cc)
+file(GLOB_RECURSE HEADER_FILES src/common/*.hh src/gltf/*.hh)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${HEADER_FILES})
+set(BUILD_OPENGL_RENDERER ON CACHE STRING "Build the OpenGL-based renderer.")
+
+if (${BUILD_OPENGL_RENDERER})
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/opengl/)
+endif()
+
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${HEADER_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-list(REMOVE_ITEM SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
 file(GLOB_RECURSE TEST_FILES test/*.cc)
 
 enable_testing()

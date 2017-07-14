@@ -1,0 +1,3 @@
+[submodule "src/renderers/opengl/extern/glow"]
+	path = src/renderers/opengl/extern/glow
+	url = https://www.graphics.rwth-aachen.de:9000/Glow/glow.git
