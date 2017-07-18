@@ -9,9 +9,13 @@ file(GLOB_RECURSE HEADER_FILES src/common/*.hh src/gltf/*.hh)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(BUILD_OPENGL_RENDERER ON CACHE STRING "Build the OpenGL-based renderer.")
+set(BUILD_VULKAN_RENDERER ON CACHE STRING "Build the Vulkan-based renderer.")
 
 if (${BUILD_OPENGL_RENDERER})
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/opengl/)
+endif()
+if (${BUILD_VULKAN_RENDERER})
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src/renderers/vulkan/)
 endif()
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${HEADER_FILES} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
